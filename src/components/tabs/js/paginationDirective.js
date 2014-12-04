@@ -1,15 +1,11 @@
 (function() {
 'use strict';
 
-
 angular.module('material.components.tabs')
-  .directive('mdTabsPagination', TabPaginationDirective);
+    .directive('mdTabsPagination', TabPaginationDirective);
 
 function TabPaginationDirective($mdConstant, $window, $$rAF, $$q, $timeout) {
 
-  // TODO allow configuration of TAB_MIN_WIDTH
-  // Must match tab min-width rule in _tabs.scss
-  var TAB_MIN_WIDTH = 8 * 12;
   // Must match (2 * width of paginators) in scss
   var PAGINATORS_WIDTH = (8 * 4) * 2;
 
@@ -21,6 +17,7 @@ function TabPaginationDirective($mdConstant, $window, $$rAF, $$q, $timeout) {
 
   function postLink(scope, element, attr, tabsCtrl) {
 
+    var debouncedUpdatePagination = $$rAF.debounce(updatePagination);
     var tabsParent = element.children();
     var state = scope.pagination = {
       page: -1,
@@ -30,20 +27,16 @@ function TabPaginationDirective($mdConstant, $window, $$rAF, $$q, $timeout) {
     };
 
     updatePagination();
-    var debouncedUpdatePagination = $$rAF.debounce(updatePagination);
 
     scope.$on('$mdTabsChanged', debouncedUpdatePagination);
     angular.element($window).on('resize', debouncedUpdatePagination);
 
     scope.$on('$destroy', function() {
       angular.element($window).off('resize', debouncedUpdatePagination);
-      tabsParent.off('focusin', onTabsFocusIn);
     });
 
     scope.$watch(tabsCtrl.selected, onSelectedTabChange);
-    scope.$watch(function() {
-      return tabsCtrl.tabToFocus;
-    }, onTabFocus);
+    scope.$watch(function() { return tabsCtrl.tabToFocus; }, onTabFocus);
 
     // Make sure we don't focus an element on the next page
     // before it's in view
@@ -99,22 +92,37 @@ function TabPaginationDirective($mdConstant, $window, $$rAF, $$q, $timeout) {
 
     function updatePagination() {
       var tabs = element.find('md-tab');
-      var tabsWidth = element.parent().prop('clientWidth') - PAGINATORS_WIDTH;
+      var clientWidth = element.parent().prop('clientWidth');
+      var tabsWidth = clientWidth - PAGINATORS_WIDTH;
 
-      var needPagination = tabsWidth && TAB_MIN_WIDTH * tabsCtrl.count() > tabsWidth;
-      var paginationToggled = needPagination !== state.active;
+      disablePagination();
 
-      // If the md-tabs element is not displayed, then do nothing.
-      if ( tabsWidth <= 0 ) {
-        needPagination = false;
-        paginationToggled = true;
-      }
+      var sizeData = calculateSizeData();
+      var needPagination = !clientWidth || sizeData.width > clientWidth;
 
       state.active = needPagination;
 
-      if (needPagination) {
+      if (needPagination) { enablePagination(); }
 
-        state.pagesCount = Math.ceil((TAB_MIN_WIDTH * tabsCtrl.count()) / tabsWidth);
+      $timeout(function () { scope.$broadcast('$mdTabsPaginationChanged'); });
+
+      function calculateSizeData() {
+        var tabs = element[0].querySelectorAll('md-tab');
+        var width = 0;
+        var max = 0;
+
+        element.parent().css('width', '9999px');
+        angular.forEach(tabs, function (tab) {
+          width += tab.offsetWidth;
+          max = Math.max(max, tab.offsetWidth);
+        });
+        element.parent().css('width', '');
+
+        return { width: width, max: max };
+      }
+
+      function enablePagination() {
+        state.pagesCount = Math.ceil((sizeData.max * tabsCtrl.count()) / tabsWidth);
         state.itemsPerPage = Math.max(1, Math.floor(tabsCtrl.count() / state.pagesCount));
         state.tabWidth = tabsWidth / state.itemsPerPage;
 
@@ -123,18 +131,15 @@ function TabPaginationDirective($mdConstant, $window, $$rAF, $$q, $timeout) {
 
         var selectedTabPage = getPageForTab(tabsCtrl.selected());
         setPage(selectedTabPage);
+      }
 
-      } else {
-
-        if (paginationToggled) {
-          $timeout(function() {
-            tabsParent.css('width', '');
-            tabs.css('width', '');
-            slideTabButtons(0);
-            state.page = -1;
-          });
-        }
-
+      function disablePagination() {
+        slideTabButtons(0);
+        tabsParent.css('width', '');
+        tabs.css('width', '');
+        state.page = -1;
+        state.active = false;
+        state.itemsPerPage = null;
       }
     }
 
@@ -181,9 +186,7 @@ function TabPaginationDirective($mdConstant, $window, $$rAF, $$q, $timeout) {
 
       state.page = page;
 
-      $timeout(function() {
-        scope.$broadcast('$mdTabsPaginationChanged');
-      });
+      scope.$broadcast('$mdTabsPaginationChanged');
 
       return slideTabButtons(-page * state.itemsPerPage * state.tabWidth);
     }

@@ -69,6 +69,9 @@ function MdTabDirective($mdInkRipple, $compile, $mdAria, $mdUtil, $mdConstant) {
   function compile(element, attr) {
     var tabLabel = element.find('md-tab-label');
 
+    // Add 'flex-sm' attribute to cause tabs to stretch only on smaller screens
+    element.attr('flex-sm', '');
+
     if (tabLabel.length) {
       // If a tab label element is found, remove it for later re-use.
       tabLabel.remove();
