@@ -102,9 +102,12 @@ function SliderController($scope, $element, $attrs, $$rAF, $window, $mdAria, $md
     var throttledRefreshDimensions = $mdUtil.throttle(refreshSliderDimensions, 5000);
 
     // Default values, overridable by $attrss
-    $attrs.min ? $attrs.$observe('min', updateMin) : updateMin(0);
-    $attrs.max ? $attrs.$observe('max', updateMax) : updateMax(100);
-    $attrs.step ? $attrs.$observe('step', updateStep) : updateStep(1);
+    updateMin(0);
+    updateMax(100);
+    updateStep(1);
+    $attrs.$observe('min', updateMin);
+    $attrs.$observe('max', updateMax);
+    $attrs.$observe('step', updateStep);
 
     // We have to manually stop the $watch on ngDisabled because it exists
     // on the parent $scope, and won't be automatically destroyed when
