@@ -275,10 +275,7 @@ function SliderController($scope, $element, $attrs, $$rAF, $window, $mdAria, $md
      */
     function setSliderPercent(percent) {
       activeTrack.css('width', (percent * 100) + '%');
-      thumbContainer.css(
-        $mdConstant.CSS.TRANSFORM,
-        'translate3d(' + getSliderDimensions().width * percent + 'px,0,0)'
-      );
+      thumbContainer.css('left', (percent * 100) + '%');
       $element.toggleClass('md-min', percent === 0);
     }
 
