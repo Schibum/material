@@ -101,10 +101,9 @@ function SliderController($scope, $element, $attrs, $$rAF, $window, $mdAria, $md
     var tickContainer = angular.element($element[0].querySelector('.md-track-ticks'));
     var throttledRefreshDimensions = $mdUtil.throttle(refreshSliderDimensions, 5000);
 
-    // Default values, overridable by $attrss
-    $attrs.min ? $attrs.$observe('min', updateMin) : updateMin(0);
-    $attrs.max ? $attrs.$observe('max', updateMax) : updateMax(100);
-    $attrs.step ? $attrs.$observe('step', updateStep) : updateStep(1);
+    $attrs.$observe('min', updateMin);
+    $attrs.$observe('max', updateMax);
+    $attrs.$observe('step', updateStep);
 
     // We have to manually stop the $watch on ngDisabled because it exists
     // on the parent $scope, and won't be automatically destroyed when
@@ -159,17 +158,17 @@ function SliderController($scope, $element, $attrs, $$rAF, $window, $mdAria, $md
     var max;
     var step;
     function updateMin(value) {
-      min = parseFloat(value);
+      min = value ? parseFloat(value) : 0;
       $element.attr('aria-valuemin', value);
       updateAll();
     }
     function updateMax(value) {
-      max = parseFloat(value);
+      max = value ? parseFloat(value) : 100;
       $element.attr('aria-valuemax', value);
       updateAll();
     }
     function updateStep(value) {
-      step = parseFloat(value);
+      step = value ? parseFloat(value) : 1;
       redrawTicks();
     }
     function updateAriaDisabled(isDisabled) {
